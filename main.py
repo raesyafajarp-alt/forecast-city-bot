@@ -1,33 +1,55 @@
 #!/usr/bin/env python3
 """Funniest Forecast for a City That Isn't.
 
-Writes one line (<=120 chars) to /output/entry.txt: a deadpan weather
-bulletin for Nulltown, a city that does not exist, where the forecast
-itself is broken -- a 404% chance of rain, a high of undefined, a low
-of null -- and the bulletin still calmly advises an umbrella.
+One deadpan weather bulletin for Nulltown, a city that does not exist.
+The forecast itself is broken -- a 404% chance of rain, a high of
+undefined, a low of null -- and the bulletin still calmly advises
+bringing an umbrella anyway.
 
-Deterministic: the same fixed line is written on every run.
+Writes the single fixed line (<=120 chars) to /output/entry.txt.
+Deterministic: every run produces the exact same bytes.
 """
 
 import os
 
+CITY = "Nulltown"
+CONDITION = "partly cloudy"
+RAIN_CHANCE = "404%"
+HIGH = "undefined"
+LOW = "null"
+
 ENTRY = (
-    "Tomorrow in Nulltown: partly cloudy, 404% chance of rain, "
-    "high undefined, low null. Bring an umbrella anyway."
+    f"Tomorrow in {CITY}: {CONDITION}, {RAIN_CHANCE} chance of rain, "
+    f"high {HIGH}, low {LOW}. Bring an umbrella anyway."
 )
 
 OUTPUT_PATH = os.environ.get("ENTRY_OUTPUT", "/output/entry.txt")
+MAX_CHARS = 120
+
+
+def validate_entry(text: str) -> str:
+    """Check the entry against the gate rules and return it unchanged."""
+    if not 1 <= len(text) <= MAX_CHARS:
+        raise ValueError(f"entry is {len(text)} chars, limit is {MAX_CHARS}")
+    if text.strip() != text:
+        raise ValueError("entry must not have leading or trailing whitespace")
+    if "\n" in text or "\r" in text:
+        raise ValueError("entry must be a single line")
+    return text
+
+
+def _write_entry(text: str, path: str) -> None:
+    """Write the entry with no trailing newline; the gate counts every char."""
+    out_dir = os.path.dirname(path)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
 
 
 def main() -> None:
-    assert 1 <= len(ENTRY) <= 120, f"entry is {len(ENTRY)} chars"
-    assert ENTRY.strip() == ENTRY
-    out_dir = os.path.dirname(OUTPUT_PATH)
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
-    # No trailing newline: the gate counts every character.
-    with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as f:
-        f.write(ENTRY)
+    entry = validate_entry(ENTRY)
+    _write_entry(entry, OUTPUT_PATH)
 
 
 if __name__ == "__main__":
